@@ -8,7 +8,8 @@
 
 
     <div class="card">
-        <form action="#" id="query-form" method="POST" class="card-header">
+        <form action="{{ route('product-datatable') }}" method="POST" class="card-header">
+            @csrf
             <div class="form-row justify-content-between">
                 <div class="col-md-2">
                     <input type="text" name="title" placeholder="Product Title" class="form-control" value="{{ old('title') }}">
@@ -33,7 +34,7 @@
                     <input type="date" name="date" placeholder="Date" class="form-control">
                 </div>
                 <div class="col-md-1">
-                    <button type="submit" class="search-button btn btn-primary float-right"><i class="fa fa-search"></i></button>
+                    <button type="submit" class="btn btn-primary float-right"><i class="fa fa-search"></i></button>
                 </div>
             </div>
         </form>
@@ -51,7 +52,7 @@
                     </tr>
                     </thead>
 
-                    <tbody id="dataTable">
+                    <tbody>
                     @foreach($products as $key => $product)
 
                         <tr>
@@ -103,7 +104,7 @@
                     <p>Showing 1 to 10 out of 100</p>
                 </div>
                 <div class="col-md-2 float-right pagination-sm" id="pagination">
-{{--                    {{ $products->links() }}--}}
+                    {{ $products->links() }}
                 </div>
             </div>
         </div>
@@ -116,7 +117,7 @@
 
 <script>
     $(document).ready(function () {
-        getDatatable();
+        productSearch();
 
         $(document).on('click', '.pagination .page-link', function (e) {
             e.preventDefault();
@@ -125,13 +126,10 @@
             if (url) {
                 let page = url.slice(url.indexOf('?') + 1);
                 page = page.slice(-1);
-                getDatatable(page);
-                $('li').removeClass('active');
-                $(this).parent().addClass('active');
+                // getDatatable(page);
+                productSearch(url);
             }
         });
-
-
     });
 
     function getSearchData(page) {
@@ -182,6 +180,113 @@
         return html;
     }
 
+    const paginatorLinks = function (link) {
+        console.log(link)
+        if (link.label == 'pagination.previous') {
+            link.label = 'Previous'
+        }
+        if (link.label == 'pagination.next') {
+            link.label = 'Next'
+        }
+        let html = '';
+        if (link.active) {
+            html += '<li class="page-item active">' +
+                '<a class="page-link">' + link.label + '</a>' +
+                '</li>';
+        } else if (!link.url) {
+            html += '<li class="page-item">' +
+                '<a class="page-link">' + link.label + '</a>' +
+                '</li>';
+        } else {
+            html += '<li class="page-item"><a class="page-link" href="' + link.url + '">' + link.label + '</a></li>';
+        }
+        return html;
+    }
+
+
+    function addPagination(links) {
+        let link_html = '<nav> <ul class="pagination">';
+        if (links.length > 3) {
+            $.each(links, function (i, link) {
+                link_html += paginatorLinks(link);
+            });
+        }
+        link_html += '</ul></nav>';
+        $('#pagination').html(link_html);
+    }
+
+    const searchAPI = function ({model, columns}) {
+        return function (url, filters = {}) {
+            return $.ajax({
+                url: url,
+                type: "POST",
+                data: {
+                    _token: '{{csrf_token()}}',
+                    resource: {
+                        model: model,
+                        columns: columns,
+                        paginate: true,
+                        page: 1,
+                        per_page: 1,
+                        filters,
+                    }
+                }
+            }).done(function (response) {
+                return response;
+            });
+        };
+    };
+
+    let baseUrl = '{{route('web-api.model-resources')}}';
+    const productFetch = searchAPI({
+        model: "{{base64_encode(\App\Models\Product::class)}}",
+        columns: 'id|title|description|product_variants.variant'
+    });
+
+    function productSearch(url = baseUrl) {
+        $('.overlay').show();
+        let searchQuery = $('#search').val();
+        let institute = $('#institute_id').val();
+        let videoCategory = $('#video_category_id').val();
+        const filters = {};
+        if (searchQuery?.toString()?.length) {
+            filters['title'] = {
+                type: 'contain',
+                value: searchQuery
+            };
+        }
+        if (institute?.toString()?.length) {
+            filters['institute_id'] = institute;
+        }
+        if (videoCategory?.toString()?.length) {
+            filters['video_category_id'] = videoCategory;
+        }
+
+        productFetch(url, filters)?.then(function (response) {
+            $('.overlay').hide();
+            window.scrollTo(0, 0);
+            let html = '';
+            if (response?.data?.data.length <= 0) {
+                html += '<div class="text-center mt-5" "><i class="fa fa-sad-tear fa-2x text-warning mb-3"></i><div class="text-center text-danger h3">{{__('generic.no_videos_found')}}</div>';
+            }
+            $.each(response.data?.data, function (i, item) {
+                html += template(item);
+            });
+
+            $('#dataTable').html(html);
+
+            let link_html = '<nav> <ul class="pagination">';
+            let links = response?.data?.links;
+            if (links.length > 3) {
+                $.each(links, function (i, link) {
+                    link_html += paginatorLinks(link);
+                });
+            }
+            link_html += '</ul></nav>';
+            $('#pagination').html(link_html);
+        });
+    }
+
 
 
     function getDatatable(page = null) {
@@ -194,7 +299,6 @@
         }).done(function (response) {
             let data = response?.data?.data;
 
-
             if (page) {
                 data = response?.data;
             }
@@ -205,10 +309,9 @@
             })
 
             $('#dataTable').html(html);
+            console.log('links', response.links);
 
-            if (!page) {
-                $('#pagination').html(response?.links);
-            }
+            $('#pagination').html(response?.links);
 
             // addPagination(response?.links);
 

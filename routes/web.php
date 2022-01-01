@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\UtilityAPI\ModelResourceFetchController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -29,4 +30,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('blog-category', 'BlogCategoryController');
 
     Route::post('product-datatable', ['App\Http\Controllers\ProductController', 'productDatatable'])->name('product-datatable');
+    Route::group(['prefix' => 'web-api', 'as' => 'web-api.'], function () {
+        Route::post('model-resources', [ModelResourceFetchController::class, 'modelResources'])
+            ->name('model-resources');
+    });
 });

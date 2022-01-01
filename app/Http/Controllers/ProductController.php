@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
-use App\Models\ProductVariant;
-use App\Models\ProductVariantPrice;
 use App\Models\Variant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,7 +16,10 @@ class ProductController extends Controller
      */
     public function index()
     {
-        return view('products.index');
+        $products = Product::query()->with(['variants','productVariantPrices']);
+        $products = $products->paginate(2);
+
+        return view('products.index', compact('products'));
     }
 
     /**
@@ -94,25 +95,53 @@ class ProductController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function productDatatable(Request $request): JsonResponse
+    public function productDatatable(Request $request)
     {
+        $page = $request->input('data.page');
+        $perPage = 2;
+
         $productList = Product::query();
-//        $productList->leftJoin('product_variants', 'product_variants.product_id', '=', 'products.id');
-//        $productList->leftJoin('product_variant_prices', 'product_variant_prices.product_id', '=', 'products.id');
+
+        if (!empty($request->input('search_title'))) {
+            $productList->where('title', '%LIKE%', $request->input('search_title'));
+        }
+
+        if (!empty($request->input('date'))) {
+            $productList->where('title', $request->input('date'));
+        }
 
         if (!empty($request->input('variant_id'))) {
-            $productList->with(['variants' => function($query) use($request) {
+            $productList->with(['variants' => function ($query) use ($request) {
                 $query->where('id', $request->input('variant_id'));
             }]);
         } else {
             $productList->with(['variants']);
         }
 
-        $productList = $productList->with(['productVariantPrices'])->paginate(2);
+        $productList->with(['productVariantPrices' => function ($query) use ($request) {
+            if (!empty($request->input('price_range.start'))) {
+                $query->where('price', '>=', $request->input('price_range.start'));
+            }
+
+            if (!empty($request->input('price_range.end'))) {
+                $query->where('price', '<=', $request->input('price_range.end'));
+            }
+        }]);
+
+        $paginationResult = $productList->paginate($perPage)->links()->render();
+
+        if ($page) {
+            $productList = $productList->skip($perPage * ($page - 1))->take($perPage)->get();
+            return response()->json([
+                'data' => $productList,
+                'links' => $paginationResult,
+            ]);
+        }
 
         return response()->json([
-            'data' => $productList,
-            'links' => $productList->links()->render(),
+            'data' => $productList->paginate($perPage),
+            'links' => $paginationResult,
         ]);
+
     }
 }
