@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\ProductVariantPrice;
 use App\Models\Variant;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -35,7 +36,7 @@ class ProductController extends Controller
      * Store a newly created resource in storage.
      *
      * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function store(Request $request)
     {
@@ -87,5 +88,31 @@ class ProductController extends Controller
     public function destroy(Product $product)
     {
         //
+    }
+
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function productDatatable(Request $request): JsonResponse
+    {
+        $productList = Product::query();
+//        $productList->leftJoin('product_variants', 'product_variants.product_id', '=', 'products.id');
+//        $productList->leftJoin('product_variant_prices', 'product_variant_prices.product_id', '=', 'products.id');
+
+        if (!empty($request->input('variant_id'))) {
+            $productList->with(['variants' => function($query) use($request) {
+                $query->where('id', $request->input('variant_id'));
+            }]);
+        } else {
+            $productList->with(['variants']);
+        }
+
+        $productList = $productList->with(['productVariantPrices'])->paginate(2);
+
+        return response()->json([
+            'data' => $productList,
+            'links' => $productList->links()->render(),
+        ]);
     }
 }

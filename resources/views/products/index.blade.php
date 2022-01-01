@@ -24,7 +24,8 @@
                         <div class="input-group-prepend">
                             <span class="input-group-text">Price Range</span>
                         </div>
-                        <input type="text" name="price_from" aria-label="First name" placeholder="From" class="form-control">
+                        <input type="text" name="price_from" aria-label="First name" placeholder="From"
+                               class="form-control">
                         <input type="text" name="price_to" aria-label="Last name" placeholder="To" class="form-control">
                     </div>
                 </div>
@@ -45,38 +46,12 @@
                         <th>#</th>
                         <th>Title</th>
                         <th>Description</th>
-                        <th>Variant</th>
-                        <th width="150px">Action</th>
+                        <th colspan="3">Variant</th>
+                        <th>Action</th>
                     </tr>
                     </thead>
 
-                    <tbody>
-
-                    <tr>
-                        <td>1</td>
-                        <td>T-Shirt <br> Created at : 25-Aug-2020</td>
-                        <td>Quality product in low cost</td>
-                        <td>
-                            <dl class="row mb-0" style="height: 80px; overflow: hidden" id="variant">
-
-                                <dt class="col-sm-3 pb-0">
-                                    SM/ Red/ V-Nick
-                                </dt>
-                                <dd class="col-sm-9">
-                                    <dl class="row mb-0">
-                                        <dt class="col-sm-4 pb-0">Price : {{ number_format(200,2) }}</dt>
-                                        <dd class="col-sm-8 pb-0">InStock : {{ number_format(50,2) }}</dd>
-                                    </dl>
-                                </dd>
-                            </dl>
-                            <button onclick="$('#variant').toggleClass('h-auto')" class="btn btn-sm btn-link">Show more</button>
-                        </td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <a href="{{ route('product.edit', 1) }}" class="btn btn-success">Edit</a>
-                            </div>
-                        </td>
-                    </tr>
+                    <tbody id="dataTable">
 
                     </tbody>
 
@@ -98,3 +73,91 @@
     </div>
 
 @endsection
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+<script>
+    $(document).ready(function () {
+        getDatatable();
+    });
+
+    function getSearchData() {
+        return {};
+    }
+
+    function getTableRow(key, item) {
+        let html = '';
+        html += '<tr>';
+        html += '<td>' + key + '</td>';
+        html += '<td>' + item?.title + ' <br> Created at : ' + item?.created_at + '</td>';
+        html += '<td>' + item.description + '</td>';
+        html += '<td>';
+        html += '<dl class="row mb-0" style="height: 80px; overflow: hidden" id="variant">';
+        html += '<dt class="col-sm-3 pb-0">';
+
+        $.each(item?.variants, function (key, variant) {
+            html += variant?.variant + '/';
+        });
+        html += '</dt>';
+        html += '</dl>';
+
+        html += '<td>';
+        html += '<dl class="row mb-0" style="height: 80px; overflow: hidden" id="variant">';
+
+        html += '<dt class="col-sm-3 pb-0">';
+        $.each(item?.variants, function (key, variant) {
+            html += variant?.variant;
+        })
+        html += "</dt>"
+        html += '<dd class="col-sm-9">';
+        html += '<dl class="row mb-0">';
+
+        $.each(item?.product_variant_prices, function (key, price) {
+            html += '<dt class="col-sm-4 pb-0">Price : ' + price?.price + '</dt>';
+            html += '<dt class="col-sm-8 pb-0">InStock : ' + price?.stock + '</dt>';
+        });
+
+        html += '</dl>';
+        html += '</dd>';
+        html += '</dl>';
+
+
+        html += '<button onclick="(' + "#variant" + ').toggleClass(' + "h-auto" + ')class="btn btn-sm btn-link">Showmore';
+        html += '</button>';
+        html += '</td>';
+        html += '<td>';
+        html += '<div class="btn-group btn-group-sm">';
+        html += '<a href="{{ route('product.edit', "__") }}" class="btn btn-success">Edit</a>'.replace('__', item.id);
+        html += '</div>';
+        html += '</td>';
+        html += '</tr>';
+
+        return html;
+    }
+
+    function getDatatable() {
+        let data = getSearchData();
+
+        $.ajax({
+            url: '{{ route('product-datatable') }}',
+            type: 'POST',
+            data: {_token: '{{ csrf_token() }}', data: data},
+        }).done(function (response) {
+            const data = response?.data?.data;
+
+            let html = '';
+            $.each(data, function (key, value) {
+                html += getTableRow(key + 1, value);
+            })
+
+            $('#dataTable').html(html);
+
+        }).catch(function (error) {
+            console.log('error');
+        }).always(function () {
+
+        })
+    }
+
+</script>
