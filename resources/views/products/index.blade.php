@@ -46,7 +46,7 @@
                         <th>#</th>
                         <th>Title</th>
                         <th>Description</th>
-                        <th colspan="3">Variant</th>
+                        <th colspan="4">Variant</th>
                         <th>Action</th>
                     </tr>
                     </thead>
@@ -90,41 +90,31 @@
         let html = '';
         html += '<tr>';
         html += '<td>' + key + '</td>';
-        html += '<td>' + item?.title + ' <br> Created at : ' + item?.created_at + '</td>';
+        html += '<td>' + item?.title + ' <br> Created at : ' + Math.floor(Math.abs(Date.now() - Date.parse(item.created_at)) / (60 * 60 * 1000)) + ' Hours ago</td>';
         html += '<td>' + item.description + '</td>';
         html += '<td>';
         html += '<dl class="row mb-0" style="height: 80px; overflow: hidden" id="variant">';
-        html += '<dt class="col-sm-3 pb-0">';
 
+        html += '<dt class="col-sm-3 pb-0">';
         $.each(item?.variants, function (key, variant) {
             html += variant?.variant + '/';
-        });
-        html += '</dt>';
-        html += '</dl>';
-
-        html += '<td>';
-        html += '<dl class="row mb-0" style="height: 80px; overflow: hidden" id="variant">';
-
-        html += '<dt class="col-sm-3 pb-0">';
-        $.each(item?.variants, function (key, variant) {
-            html += variant?.variant;
         })
         html += "</dt>"
         html += '<dd class="col-sm-9">';
         html += '<dl class="row mb-0">';
 
         $.each(item?.product_variant_prices, function (key, price) {
-            html += '<dt class="col-sm-4 pb-0">Price : ' + price?.price + '</dt>';
-            html += '<dt class="col-sm-8 pb-0">InStock : ' + price?.stock + '</dt>';
+            html += '<dt class="col-sm-6 pb-0">Price : ' + price?.price + '</dt>';
+            html += '<dt class="col-sm-6 pb-0">InStock : ' + price?.stock + '</dt>';
         });
 
         html += '</dl>';
         html += '</dd>';
         html += '</dl>';
 
+        html += '<button class="btn btn-sm btn-link show-more-variant-btn">';
+        html += 'show more</button>';
 
-        html += '<button onclick="(' + "#variant" + ').toggleClass(' + "h-auto" + ')class="btn btn-sm btn-link">Showmore';
-        html += '</button>';
         html += '</td>';
         html += '<td>';
         html += '<div class="btn-group btn-group-sm">';
@@ -152,6 +142,19 @@
             })
 
             $('#dataTable').html(html);
+
+
+            $('.show-more-variant-btn').on('click', function () {
+                const variantEle = $(this).parent().find('#variant');
+                variantEle.toggleClass('h-auto');
+
+                let variantClass = variantEle.attr('class');
+                if (variantClass.includes('h-auto')) {
+                    $(this).html('show less');
+                } else {
+                    $(this).html('show more');
+                }
+            })
 
         }).catch(function (error) {
             console.log('error');
