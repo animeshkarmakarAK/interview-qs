@@ -30,3 +30,4 @@ Vue.component('create-product', require('./components/CreateProduct.vue').defaul
 const app = new Vue({
     el: '#app',
 });
+

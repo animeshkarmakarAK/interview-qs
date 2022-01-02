@@ -29,6 +29,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('blog', 'BlogController');
     Route::resource('blog-category', 'BlogCategoryController');
 
+    Route::get('get-product-variants', [\App\Http\Controllers\ProductController::class, 'variantList'])->name('get-product-variants');
     Route::post('product-datatable', ['App\Http\Controllers\ProductController', 'productDatatable'])->name('product-datatable');
     Route::group(['prefix' => 'web-api', 'as' => 'web-api.'], function () {
         Route::post('model-resources', [ModelResourceFetchController::class, 'modelResources'])

@@ -6,7 +6,7 @@
                     <div class="card-body">
                         <div class="form-group">
                             <label for="">Product Name</label>
-                            <input type="text" v-model="product_name" placeholder="Product Name" class="form-control">
+                            <input type="text" v-model="product_name" value="{{ }}" placeholder="Product Name" class="form-control">
                         </div>
                         <div class="form-group">
                             <label for="">Product SKU</label>
@@ -24,7 +24,7 @@
                         <h6 class="m-0 font-weight-bold text-primary">Media</h6>
                     </div>
                     <div class="card-body border">
-                        <vue-dropzone ref="myVueDropzone" id="dropzone" :options="dropzoneOptions"></vue-dropzone>
+                        <input type="file" v-model="images" class="form-control">
                     </div>
                 </div>
             </div>
@@ -101,6 +101,7 @@ import vue2Dropzone from 'vue2-dropzone'
 import 'vue2-dropzone/dist/vue2Dropzone.min.css'
 import InputTag from 'vue-input-tag'
 
+
 export default {
     components: {
         vueDropzone: vue2Dropzone,
@@ -113,11 +114,17 @@ export default {
         }
     },
     data() {
+        let form = {
+            title: '{{ optional($product->title }}',
+            sku: '{{ optional($product->sku }}',
+            description: '{{ optional($product->description }}',
+        }
+
         return {
-            product_name: '',
-            product_sku: '',
-            description: '',
-            images: [],
+            product_name: form.title ?? '',
+            product_sku: form.sku ?? '',
+            description: form.description ?? '',
+            images: '',
             product_variant: [
                 {
                     option: this.variants[0].id,
@@ -171,10 +178,9 @@ export default {
                 return pre;
             }
             let self = this;
-            let ans = arr[0].reduce(function (ans, value) {
+            return arr[0].reduce(function (ans, value) {
                 return ans.concat(self.getCombn(arr.slice(1), pre + value + '/'));
             }, []);
-            return ans;
         },
 
         // store product into database
@@ -197,8 +203,6 @@ export default {
 
             console.log(product);
         }
-
-
     },
     mounted() {
         console.log('Component mounted.')

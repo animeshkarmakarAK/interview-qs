@@ -11,11 +11,17 @@
         <form action="#" id="query-form" method="POST" class="card-header">
             <div class="form-row justify-content-between">
                 <div class="col-md-2">
-                    <input type="text" name="title" placeholder="Product Title" class="form-control" value="{{ old('title') }}">
+                    <input type="text" name="title" placeholder="Product Title" class="form-control"
+                           value="{{ old('title') }}">
                 </div>
                 <div class="col-md-2">
-                    <select name="variant" id="" class="form-control">
-
+                    <select name="variant" class="variants select2 form-control">
+                        <option></option>
+                        @foreach($variants as $variant)
+                            @foreach($variant as $item)
+                                <option value="{{ $item['variant_id'] }}">{{ $item['variant'] }}</option>
+                            @endforeach
+                        @endforeach
                     </select>
                 </div>
 
@@ -33,7 +39,8 @@
                     <input type="date" name="date" placeholder="Date" class="form-control">
                 </div>
                 <div class="col-md-1">
-                    <button type="submit" class="search-button btn btn-primary float-right"><i class="fa fa-search"></i></button>
+                    <button type="submit" class="search-button btn btn-primary float-right"><i class="fa fa-search"></i>
+                    </button>
                 </div>
             </div>
         </form>
@@ -103,7 +110,7 @@
                     <p>Showing 1 to 10 out of 100</p>
                 </div>
                 <div class="col-md-2 float-right pagination-sm" id="pagination">
-{{--                    {{ $products->links() }}--}}
+                    {{--                    {{ $products->links() }}--}}
                 </div>
             </div>
         </div>
@@ -183,7 +190,6 @@
     }
 
 
-
     function getDatatable(page = null) {
         let data = getSearchData(page);
 
@@ -231,4 +237,15 @@
         })
     }
 
+    $(document).ready(function () {
+        $('.select2').select2();
+    });
+
+    $('.variant').select2({
+        ajax: {
+            url: '{{ route('get-product-variants') }}',
+            dataType: 'json'
+            // Additional AJAX parameters go here; see the end of this chapter for the full code of this example
+        }
+    });
 </script>

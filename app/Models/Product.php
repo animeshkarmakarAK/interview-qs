@@ -7,9 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
-    protected $fillable = [
-        'title', 'sku', 'description'
-    ];
+    protected $guarded = ['id'];
 
     /**
      * @return HasMany

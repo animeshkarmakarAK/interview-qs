@@ -3,9 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Variant;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -14,12 +20,14 @@ class ProductController extends Controller
      *
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Http\Response|\Illuminate\View\View
      */
-    public function index()
+    public function index(): View
     {
-        $products = Product::query()->with(['variants','productVariantPrices']);
+        $products = Product::query()->with(['variants', 'productVariantPrices']);
         $products = $products->paginate(2);
 
-        return view('products.index', compact('products'));
+        $variants = ProductVariant::all()->groupBy('variant_id')->toArray();
+
+        return view('products.index', compact('products', 'variants'));
     }
 
     /**
@@ -33,15 +41,102 @@ class ProductController extends Controller
         return view('products.create', compact('variants'));
     }
 
+    private function validator(Request $request, $id = null): Validator
+    {
+        $rules = [
+            'title' => [
+                'required',
+                'string'
+            ],
+
+            'sku' => [
+                'required',
+                'string',
+                'unique:products,' . $id,
+            ],
+
+            'description' => [
+                'required',
+                'string'
+            ],
+
+            'product_variant' => [
+                'array',
+                'required'
+            ],
+            'product_variant_prices' => [
+                'array',
+                'required'
+            ],
+            'product_image' => [
+                'nullable'
+            ]
+        ];
+
+        return \Illuminate\Support\Facades\Validator::make($request->all(), $rules);
+    }
+
     /**
      * Store a newly created resource in storage.
      *
-     * @param \Illuminate\Http\Request $request
+     * @param Request $request
      * @return JsonResponse
+     * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
+        $data = $this->validator($request)->validate();
 
+        DB::beginTransaction();
+        try {
+            $product = Arr::only($data, ['title', 'sku', 'description']);
+            $product = Product::create($product);
+
+            foreach ($data['product_variant'] as $key => $variant) {
+                $variantData = [];
+                $variantData['variant_id'] = $variant['option'];
+
+                foreach ($variant['tags'] as $variantItem) {
+                    $variantData['variant'] = $variantItem;
+                    $product->variants()->create($variantData);
+                }
+
+                $productVariantPriceData = [];
+                switch ($key) {
+                    case 0:
+                        $productVariantPriceData['product_variant_one'] = $variant['option'];
+                        break;
+
+                    case 1:
+                        $productVariantPriceData['product_variant_two'] = $variant['option'];
+                        break;
+
+                    case 2:
+                        $productVariantPriceData['product_variant_three'] = $variant['option'];
+                        break;
+                }
+
+                $productVariantPriceData['title'] = $data['product_variant_prices'][$key]['title'];
+                $productVariantPriceData['price'] = $data['product_variant_prices'][$key]['price'];
+                $productVariantPriceData['stock'] = $data['product_variant_prices'][$key]['stock'];
+
+                $product->productVariantPrices()->create($productVariantPriceData);
+            }
+
+            DB::commit();
+        } catch (\Throwable $exception) {
+            DB::rollBack();
+            Log::debug($exception->getMessage());
+            return response()->json([
+                'message' => 'something_wrong_try_again',
+                'alert-type' => 'error'
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'product added successfully!',
+            'alert-type' => 'success'
+        ]);
     }
 
 
@@ -59,13 +154,13 @@ class ProductController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param \App\Models\Product $product
-     * @return \Illuminate\Http\Response
+     * @param Product $product
+     * @return View
      */
-    public function edit(Product $product)
+    public function edit(Product $product): View
     {
         $variants = Variant::all();
-        return view('products.edit', compact('variants'));
+        return view('products.edit', compact('variants', 'product'));
     }
 
     /**
@@ -95,36 +190,36 @@ class ProductController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function productDatatable(Request $request)
+    public function productDatatable(Request $request): JsonResponse
     {
         $page = $request->input('data.page');
         $perPage = 2;
 
         $productList = Product::query();
 
-        if (!empty($request->input('search_title'))) {
-            $productList->where('title', '%LIKE%', $request->input('search_title'));
+        if (!empty($request->input('title'))) {
+            $productList->where('title', '%LIKE%', $request->input('title'));
         }
 
         if (!empty($request->input('date'))) {
-            $productList->where('title', $request->input('date'));
+            $productList->whereDate('date', '>=', $request->input('date'));
         }
 
-        if (!empty($request->input('variant_id'))) {
+        if (!empty($request->input('variant'))) {
             $productList->with(['variants' => function ($query) use ($request) {
-                $query->where('id', $request->input('variant_id'));
+                $query->where('id', $request->input('variant'));
             }]);
         } else {
             $productList->with(['variants']);
         }
 
         $productList->with(['productVariantPrices' => function ($query) use ($request) {
-            if (!empty($request->input('price_range.start'))) {
-                $query->where('price', '>=', $request->input('price_range.start'));
+            if (!empty($request->input('price_from'))) {
+                $query->where('price', '>=', $request->input('price_from'));
             }
 
-            if (!empty($request->input('price_range.end'))) {
-                $query->where('price', '<=', $request->input('price_range.end'));
+            if (!empty($request->input('price_to'))) {
+                $query->where('price', '<=', $request->input('price_to'));
             }
         }]);
 
@@ -143,5 +238,17 @@ class ProductController extends Controller
             'links' => $paginationResult,
         ]);
 
+    }
+
+    /**
+     * @return JsonResponse
+     */
+    public function variantList(): JsonResponse
+    {
+        $variants = Variant::all();
+
+        return response()->json([
+            'variants' => $variants
+        ]);
     }
 }
