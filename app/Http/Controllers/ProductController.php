@@ -208,7 +208,7 @@ class ProductController extends Controller
         }
 
         if (!empty($request->input('data.date'))) {
-            $productList->whereDate('products.date', '>=', $request->input('data.date'));
+            $productList->whereDate('products.created_at', '>=', $request->input('data.date'));
         }
 
         if (!empty($request->input('data.variant'))) {

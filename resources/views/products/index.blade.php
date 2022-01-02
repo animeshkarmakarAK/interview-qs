@@ -110,7 +110,7 @@
         <div class="card-footer">
             <div class="row justify-content-between">
                 <div class="col-md-6">
-                    <p>Showing 1 to 10 out of 100</p>
+                    <p id="pagination-count-result">Showing 1 to 10 out of 100</p>
                 </div>
                 <div class="col-md-2 float-right pagination-sm" id="pagination">
                     {{--                    {{ $products->links() }}--}}
@@ -217,8 +217,6 @@
             data: {_token: '{{ csrf_token() }}', data: data},
         }).done(function (response) {
             let data = response?.data?.data;
-
-
             if (page) {
                 data = response?.data;
             }
@@ -233,6 +231,11 @@
             if (!page) {
                 $('#pagination').html(response?.links);
             }
+
+            let total = response?.data?.total ?? response?.total;
+            console.log('total', total);
+
+            $('#pagination-count-result').html()
 
             // addPagination(response?.links);
 
