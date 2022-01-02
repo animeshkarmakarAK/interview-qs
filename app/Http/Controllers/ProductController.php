@@ -197,29 +197,29 @@ class ProductController extends Controller
 
         $productList = Product::query();
 
-        if (!empty($request->input('title'))) {
-            $productList->where('title', '%LIKE%', $request->input('title'));
+        if (!empty($request->input('data.title'))) {
+            $productList->where('title', '%LIKE%', $request->input('data.title'));
         }
 
-        if (!empty($request->input('date'))) {
-            $productList->whereDate('date', '>=', $request->input('date'));
+        if (!empty($request->input('data.date'))) {
+            $productList->whereDate('date', '>=', $request->input('data.date'));
         }
 
-        if (!empty($request->input('variant'))) {
+        if (!empty($request->input('data.variant'))) {
             $productList->with(['variants' => function ($query) use ($request) {
-                $query->where('id', $request->input('variant'));
+                $query->where('id', $request->input('data.variant'));
             }]);
         } else {
             $productList->with(['variants']);
         }
 
         $productList->with(['productVariantPrices' => function ($query) use ($request) {
-            if (!empty($request->input('price_from'))) {
-                $query->where('price', '>=', $request->input('price_from'));
+            if (!empty($request->input('data.price_from'))) {
+                $query->where('price', '>=', $request->input('data.price_from'));
             }
 
-            if (!empty($request->input('price_to'))) {
-                $query->where('price', '<=', $request->input('price_to'));
+            if (!empty($request->input('data.price_to'))) {
+                $query->where('price', '<=', $request->input('data.price_to'));
             }
         }]);
 

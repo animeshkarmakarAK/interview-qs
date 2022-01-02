@@ -11,11 +11,11 @@
         <form action="#" id="query-form" method="POST" class="card-header">
             <div class="form-row justify-content-between">
                 <div class="col-md-2">
-                    <input type="text" name="title" placeholder="Product Title" class="form-control"
+                    <input type="text" name="title" id="title" placeholder="Product Title" class="form-control"
                            value="{{ old('title') }}">
                 </div>
                 <div class="col-md-2">
-                    <select name="variant" class="variants select2 form-control">
+                    <select name="variant" id="variant" class="variants select2 form-control">
                         <option></option>
                         @foreach($variants as $variant)
                             @foreach($variant as $item)
@@ -30,13 +30,14 @@
                         <div class="input-group-prepend">
                             <span class="input-group-text">Price Range</span>
                         </div>
-                        <input type="text" name="price_from" aria-label="First name" placeholder="From"
+                        <input type="text" name="price_from" id="price_from" aria-label="First name" placeholder="From"
                                class="form-control">
-                        <input type="text" name="price_to" aria-label="Last name" placeholder="To" class="form-control">
+                        <input type="text" name="price_to" id="price_to" aria-label="Last name" placeholder="To"
+                               class="form-control">
                     </div>
                 </div>
                 <div class="col-md-2">
-                    <input type="date" name="date" placeholder="Date" class="form-control">
+                    <input type="date" name="date" id="date" placeholder="Date" class="form-control">
                 </div>
                 <div class="col-md-1">
                     <button type="submit" class="search-button btn btn-primary float-right"><i class="fa fa-search"></i>
@@ -125,6 +126,19 @@
     $(document).ready(function () {
         getDatatable();
 
+        $('.search-button').on('click', function (e) {
+            e.preventDefault();
+
+            let data = {
+                title: $('#title').val(),
+                price_from: $('#price_from').val(),
+                price_to: $('#price_to').val(),
+                date: $('#date').val(),
+                variant: $('#variant').val(),
+            }
+            getDatatable(null, data);
+        })
+
         $(document).on('click', '.pagination .page-link', function (e) {
             e.preventDefault();
             let url = $(this).attr('href');
@@ -190,13 +204,15 @@
     }
 
 
-    function getDatatable(page = null) {
-        let data = getSearchData(page);
+    function getDatatable(page = null, data = {}) {
+        if (page) {
+            data.page = page;
+        }
 
         $.ajax({
             url: '{{ route('product-datatable') }}',
             type: 'POST',
-            data: {_token: '{{ csrf_token() }}', data: data,},
+            data: {_token: '{{ csrf_token() }}', data: data},
         }).done(function (response) {
             let data = response?.data?.data;
 
