@@ -24,8 +24,14 @@ class ProductController extends Controller
     {
         $products = Product::query()->with(['variants', 'productVariantPrices']);
         $products = $products->paginate(2);
+        $variants = ProductVariant::select([
+            'product_variants.id',
+            'product_variants.variant',
+            'variants.title',
+            'variants.id as variant_id',
+        ])->join('variants', 'variants.id', '=', 'product_variants.variant_id')->get();
 
-        $variants = ProductVariant::all()->groupBy('variant_id')->toArray();
+        $variants = $variants->groupBy('title');
 
         return view('products.index', compact('products', 'variants'));
     }
@@ -202,7 +208,7 @@ class ProductController extends Controller
         }
 
         if (!empty($request->input('data.date'))) {
-            $productList->whereDate('date', '>=', $request->input('data.date'));
+            $productList->whereDate('products.date', '>=', $request->input('data.date'));
         }
 
         if (!empty($request->input('data.variant'))) {

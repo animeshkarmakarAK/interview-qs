@@ -16,11 +16,13 @@
                 </div>
                 <div class="col-md-2">
                     <select name="variant" id="variant" class="variants select2 form-control">
-                        <option></option>
-                        @foreach($variants as $variant)
-                            @foreach($variant as $item)
-                                <option value="{{ $item['variant_id'] }}">{{ $item['variant'] }}</option>
-                            @endforeach
+                        <option disabled selected>select</option>
+                        @foreach($variants as $key => $variant)
+                            <optgroup label="{{ $key }}">
+                                @foreach($variant as $item)
+                                    <option value="{{ $item['variant_id'] }}">{{ $item['variant'] }}</option>
+                                @endforeach
+                            </optgroup>
                         @endforeach
                     </select>
                 </div>
