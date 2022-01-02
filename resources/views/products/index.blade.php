@@ -232,12 +232,9 @@
                 $('#pagination').html(response?.links);
             }
 
-            let total = response?.data?.total ?? response?.total;
-            console.log('total', total);
+            let total = response?.data?.total ?? response?.data?.data?.total;
 
-            $('#pagination-count-result').html()
-
-            // addPagination(response?.links);
+            $('#pagination-count-result').html("showing 1 to 2 of" + total + " entries");
 
             $('.show-more-variant-btn').on('click', function () {
                 const variantEle = $(this).parent().find('#variant');
