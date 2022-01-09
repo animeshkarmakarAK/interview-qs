@@ -171,14 +171,20 @@ class ProductController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param Product $product
+     * @param $id
      * @return View
      */
     public function edit($id): View
     {
         $variants = Variant::all();
+        $product = Product::find($id);
+        $productVariants = $product->variants()->get();
+        $productVariantPrices = $product->productVariantPrices()->get();
 
-        return view('products.edit', compact('variants', 'id'));
+        return view('products.edit', compact('variants', 'product'))->with([
+            'productVariants' => $productVariants,
+            'productVariantPrices' => $productVariantPrices
+        ]);
     }
 
     /**

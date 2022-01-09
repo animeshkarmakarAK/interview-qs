@@ -6,7 +6,7 @@
                     <div class="card-body">
                         <div class="form-group">
                             <label for="">Product Name</label>
-                            <input type="text" v-model="product_name" value="{{ }}" placeholder="Product Name" class="form-control">
+                            <input type="text" v-model="product_name" placeholder="Product Name" class="form-control">
                         </div>
                         <div class="form-group">
                             <label for="">Product SKU</label>
@@ -24,7 +24,7 @@
                         <h6 class="m-0 font-weight-bold text-primary">Media</h6>
                     </div>
                     <div class="card-body border">
-                        <input type="file" v-model="images" class="form-control">
+                        <vue-dropzone ref="myVueDropzone" id="dropzone" :options="dropzoneOptions"></vue-dropzone>
                     </div>
                 </div>
             </div>
@@ -49,16 +49,19 @@
                             </div>
                             <div class="col-md-8">
                                 <div class="form-group">
-                                    <label v-if="product_variant.length != 1" @click="product_variant.splice(index,1); checkVariant"
+                                    <label v-if="product_variant.length != 1"
+                                           @click="product_variant.splice(index,1); checkVariant"
                                            class="float-right text-primary"
                                            style="cursor: pointer;">Remove</label>
                                     <label v-else for="">.</label>
-                                    <input-tag v-model="item.tags" @input="checkVariant" class="form-control"></input-tag>
+                                    <input-tag v-model="item.tags" @input="checkVariant"
+                                               class="form-control"></input-tag>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="card-footer" v-if="product_variant.length < variants.length && product_variant.length < 3">
+                    <div class="card-footer"
+                         v-if="product_variant.length < variants.length && product_variant.length < 3">
                         <button @click="newVariant" class="btn btn-primary">Add another option</button>
                     </div>
 
@@ -101,7 +104,6 @@ import vue2Dropzone from 'vue2-dropzone'
 import 'vue2-dropzone/dist/vue2Dropzone.min.css'
 import InputTag from 'vue-input-tag'
 
-
 export default {
     components: {
         vueDropzone: vue2Dropzone,
@@ -112,35 +114,35 @@ export default {
             type: Array,
             required: true
         },
-        data: {
+        product: {
+            type: Object,
+        },
+        product_variants: {
+            type: Array
+        },
+        product_variant_prices: {
             type: Array,
-        },
-        scope: {
-           type: String,
-        },
-        id: {
-            type: String,
         }
     },
     data() {
-        let form = {
-            title: '{{ optional($product->title }}',
-            sku: '{{ optional($product->sku }}',
-            description: '{{ optional($product->description }}',
-        }
+        let tags = [];
+        this.product_variants.forEach(function (variant)  {
+            tags.push(variant.variant);
+        })
 
         return {
-            product_name: form.title ?? '',
-            product_sku: form.sku ?? '',
-            description: form.description ?? '',
-            images: '',
-            product_variant: [
-                {
-                    option: this.variants[0].id,
-                    tags: []
-                }
-            ],
-            product_variant_prices: [],
+            product_name: this?.product ? this.product.title : '',
+            product_sku: this?.product ? this.product.sku : '',
+            description: this?.product?.description ?? '',
+            images: [],
+            product_variant:
+                [
+                    {
+                        option: this.variants[0].id,
+                        tags: tags
+                    }
+                ],
+            product_variant_prices: this.product_variant_prices ?? [],
             dropzoneOptions: {
                 url: 'https://httpbin.org/post',
                 thumbnailWidth: 150,
@@ -148,14 +150,6 @@ export default {
                 headers: {"My-Awesome-Header": "header value"}
             }
         }
-    },
-    mounted() {
-        if (this.scope == 'edit') {
-            $.get( "get-product/" + this.id, function( data ) {
-                console.log(data);
-            });
-        }
-        console.log('Component mounted.', this.id)
     },
     methods: {
         // it will push a new object into product variant
@@ -195,9 +189,10 @@ export default {
                 return pre;
             }
             let self = this;
-            return arr[0].reduce(function (ans, value) {
+            let ans = arr[0].reduce(function (ans, value) {
                 return ans.concat(self.getCombn(arr.slice(1), pre + value + '/'));
             }, []);
+            return ans;
         },
 
         // store product into database
@@ -213,17 +208,19 @@ export default {
 
 
             axios.post('/product', product).then(response => {
-                console.log(response.data);
-                if (response.data) {
-                    alert('product created successfully');
-                }
+                alert('product successfully added');
             }).catch(error => {
                 console.log(error);
+                alert(error.message);
             })
 
             console.log(product);
         }
-    },
 
+
+    },
+    mounted() {
+        console.log('Component mounted.')
+    }
 }
 </script>
