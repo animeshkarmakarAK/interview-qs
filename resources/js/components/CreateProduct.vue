@@ -111,6 +111,16 @@ export default {
         variants: {
             type: Array,
             required: true
+        },
+        data: {
+            type: Array,
+        },
+        scope: {
+           type: String,
+        },
+        id: {
+            type: String,
+            required: true
         }
     },
     data() {
@@ -139,6 +149,14 @@ export default {
                 headers: {"My-Awesome-Header": "header value"}
             }
         }
+    },
+    mounted() {
+        if (this.scope == 'edit') {
+            $.get( "get-product/" + this.id, function( data ) {
+                console.log(data);
+            });
+        }
+        console.log('Component mounted.', this.id)
     },
     methods: {
         // it will push a new object into product variant
@@ -197,6 +215,9 @@ export default {
 
             axios.post('/product', product).then(response => {
                 console.log(response.data);
+                if (response.data) {
+                    alert('product created successfully');
+                }
             }).catch(error => {
                 console.log(error);
             })
@@ -204,8 +225,6 @@ export default {
             console.log(product);
         }
     },
-    mounted() {
-        console.log('Component mounted.')
-    }
+
 }
 </script>

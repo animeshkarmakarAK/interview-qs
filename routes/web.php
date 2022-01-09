@@ -28,6 +28,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('product', 'ProductController');
     Route::resource('blog', 'BlogController');
     Route::resource('blog-category', 'BlogCategoryController');
+    Route::get('get-product', ['App\Http\Controllers\ProductController', 'getProduct'])->name('get-product');
 
     Route::get('get-product-variants', [\App\Http\Controllers\ProductController::class, 'variantList'])->name('get-product-variants');
     Route::post('product-datatable', ['App\Http\Controllers\ProductController', 'productDatatable'])->name('product-datatable');

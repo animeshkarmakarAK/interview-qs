@@ -15,6 +15,14 @@ use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
+    public function getProduct($id): JsonResponse
+    {
+        return response()->json([
+                'product' => Product::find($id),
+            ]
+        );
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -44,7 +52,10 @@ class ProductController extends Controller
     public function create()
     {
         $variants = Variant::all();
-        return view('products.create', compact('variants'));
+        $data = [
+            'scope' => 'create',
+        ];
+        return view('products.create', compact('variants'))->with($data);
     }
 
     private function validator(Request $request, $id = null): Validator
@@ -58,7 +69,7 @@ class ProductController extends Controller
             'sku' => [
                 'required',
                 'string',
-                'unique:products,' . $id,
+                'unique:products,sku,' . $id,
             ],
 
             'description' => [
@@ -163,10 +174,11 @@ class ProductController extends Controller
      * @param Product $product
      * @return View
      */
-    public function edit(Product $product): View
+    public function edit($id): View
     {
         $variants = Variant::all();
-        return view('products.edit', compact('variants', 'product'));
+
+        return view('products.edit', compact('variants', 'id'));
     }
 
     /**
@@ -211,37 +223,62 @@ class ProductController extends Controller
             $productList->whereDate('products.created_at', '>=', $request->input('data.date'));
         }
 
+
         if (!empty($request->input('data.variant'))) {
-            $productList->with(['variants' => function ($query) use ($request) {
+            $productList->with(['variants' => function ($query) use ($productList, $request) {
                 $query->where('id', $request->input('data.variant'));
+                $filterWithProductId = $query->get()->pluck('product_id')->toArray();
+
+                if (!empty($filterWithProductId)) {
+                    $productList->whereIn('products.id', $filterWithProductId);
+                }
             }]);
         } else {
             $productList->with(['variants']);
         }
 
-        $productList->with(['productVariantPrices' => function ($query) use ($request) {
-            if (!empty($request->input('data.price_from'))) {
+        $productList->with(['productVariantPrices' => function ($query) use ($productList, $request) {
+            if ($request->input('data.price_from')) {
                 $query->where('price', '>=', $request->input('data.price_from'));
             }
 
-            if (!empty($request->input('data.price_to'))) {
+            if ($request->input('data.price_to')) {
                 $query->where('price', '<=', $request->input('data.price_to'));
             }
+
+            $filter = $query->get()->pluck('product_id')->toArray();
+
+            if (($request->input('data.price_from') || $request->input('data.price_to')) && !empty($filter)) {
+                $productList->whereIn('products.id', $filter);
+            }
         }]);
+
+        $total = $productList->count();
+        $from = 1;
+        $to = $perPage;
 
         $paginationResult = $productList->paginate($perPage)->links()->render();
 
         if ($page) {
+            $from = $perPage * ($page - 1);
+            $to = $from + $perPage;
             $productList = $productList->skip($perPage * ($page - 1))->take($perPage)->get();
+            $to = $productList->count() > $perPage ? ($from + $perPage) : $productList->count();
             return response()->json([
                 'data' => $productList,
                 'links' => $paginationResult,
+                'total' => $total,
+                'from' => $from,
+                'to' => $from + $productList->count()
             ]);
         }
 
         return response()->json([
             'data' => $productList->paginate($perPage),
             'links' => $paginationResult,
+            'total' => $productList->count(),
+            'from' => $total == 0 ? $total : $from,
+            'to' => $total == 0 ? $total : ($productList->count() > $perPage ? $perPage : $productList->count())
         ]);
 
     }

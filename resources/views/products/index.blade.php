@@ -221,6 +221,7 @@
                 data = response?.data;
             }
 
+
             let html = '';
             $.each(data, function (key, value) {
                 html += getTableRow(key + 1, value);
@@ -234,7 +235,7 @@
 
             let total = response?.data?.total ?? response?.data?.data?.total;
 
-            $('#pagination-count-result').html("showing 1 to 2 of" + total + " entries");
+            $('#pagination-count-result').html("showing " + response?.from +  " to " + response?.to +  " of " + response?.total + " entries");
 
             $('.show-more-variant-btn').on('click', function () {
                 const variantEle = $(this).parent().find('#variant');
